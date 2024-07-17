@@ -10,7 +10,7 @@
     </parent>
     <groupId>cn.sleepybear</groupId>
     <artifactId>jxkp-auto-learn</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>jxkp-auto-learn</name>
     <description>jxkp-auto-learn</description>
     <url/>

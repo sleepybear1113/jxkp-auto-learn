@@ -1,5 +1,5 @@
 server:
-  port: 14001
+  port: 14002
 spring:
   application:
     name: jxkp-auto-learn

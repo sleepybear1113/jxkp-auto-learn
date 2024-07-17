@@ -22,13 +22,23 @@
 
 
         <div class="modal-body">
-            <label class="col-sm-12 col-12">
-                Cookie
-                <input class="form-control" v-model="userCookie" placeholder="请输入Cookie">
-            </label>
+            <div style="text-align: center">
+                <button class="w-25 btn rounded-3 btn-secondary" @click="tab = 1">使用Cookie登录</button>
+                <button class="w-25 btn rounded-3 btn-secondary" @click="tab = 2">使用用户名密码登录</button>
+            </div>
+
+            <div v-show="tab === 1">
+                <label class="col-sm-12 col-12">
+                    Cookie
+                    <input class="form-control" v-model="userCookie" placeholder="请输入Cookie">
+                </label>
+                <div style="text-align: center;">
+                    <button class="w-25 btn rounded-3 btn-secondary" @click="addUserCookie">Cookie登录</button>
+                </div>
+            </div>
             <br/>
 
-            <div v-if="false">
+            <div v-show="tab === 2">
                 <label class="col-sm-12 col-12">
                     用户名
                     <input class="form-control" v-model="idCard" placeholder="请输入用户名">
@@ -39,30 +49,30 @@
                     密码
                     <input class="form-control" v-model="password" placeholder="请输入密码">
                 </label>
-                <button @click="getCaptcha">获取验证码</button>
+                <button class="w-25 btn rounded-3 btn-secondary" @click="getCaptcha">获取验证码</button>
                 <label v-if="loadCaptcha" class="col-sm-12 col-12">
                     验证码
-                    <img :src="'/api-jxkp-auto-learn/getCaptchaImg?idCard=' + idCard + '&password=' + password">
+                    <input class="form-control" v-model="captcha" placeholder="验证码">
+                    <label id="captchaImgLabel" class="col-sm-12 col-12">
+                        <img :src="'/api-jxkp-auto-learn/getCaptchaImg?idCard=' + idCard1 + '&password=' + password1 + '&t=' + t">
+                    </label>
                 </label>
+
+                <div style="text-align: center;">
+                    <button class="w-25 btn rounded-3 btn-secondary" @click="login">用户名登录</button>
+                </div>
             </div>
-
-            <br/>
-
         </div>
 
+        <hr/>
 
         <div style="text-align: center;">
-            <button class="w-50 btn rounded-3 btn-secondary" @click="addUserCookie">登录</button>
+            <button class="w-25 btn rounded-3 btn-secondary" @click="getUserProfile">获取用户信息</button>
         </div>
         <br/>
 
         <div style="text-align: center;">
-            <button class="w-50 btn rounded-3 btn-secondary" @click="getUserProfile">获取信息</button>
-        </div>
-        <br/>
-
-        <div style="text-align: center;">
-            <button class="w-50 btn rounded-3 btn-secondary" @click="getPersonTotalLessons">获取课程</button>
+            <button class="w-25 btn rounded-3 btn-secondary" @click="getPersonTotalLessons">获取所有课程</button>
         </div>
 
         <div class="modal-body">
@@ -73,6 +83,7 @@
             </div>
 
             <div v-show="courseInfoDtoList && courseInfoDtoList.length > 0">
+                <h3>请勾选要学习的课程，然后点击开始学习。可以随时打开本页面，点击“获取所有课程”查看学习进度。</h3>
                 <table>
                     <tr>
                         <th>勾选</th>

@@ -36,6 +36,6 @@ public class UserInfoDto implements Serializable {
     private String captchaToken;
 
     public String getKey() {
-        return name + "@" + idCard;
+        return idCard;
     }
 }

@@ -2,20 +2,42 @@ const {createApp} = Vue;
 let app = createApp({
     data() {
         return {
+            tab: 1,
             userCookie: "",
             idCard: "",
+            idCard1: "",
             password: "",
+            password1: "",
+            captcha: "",
             loadCaptcha: false,
             captchaImgSrc: "",
             userInfoDto: new UserInfoDto(),
             courseInfoDtoList: [],
             showLogin: false,
-        }
+            t: new Date().getTime(),
+        };
     },
     created() {
         this.getUserProfile();
     },
     methods: {
+        login() {
+            let url = "/login";
+            let loginParams = {
+                params: {
+                    idCard: this.idCard,
+                    password: this.password,
+                    captcha: this.captcha,
+                }
+            };
+            axios.get(url, loginParams).then(res => {
+                let data = res.data.result;
+                this.userInfoDto = new UserInfoDto(data);
+                alert("登录成功！请点击“获取所有课程”");
+                this.tab = 3;
+            }).catch(() => {
+            });
+        },
         addUserCookie() {
             let url = "/addUserCookie";
             let addUserCookieParams = {
@@ -40,6 +62,9 @@ let app = createApp({
                 return;
             }
             this.loadCaptcha = false;
+            this.t = new Date().getTime();
+            this.idCard1 = this.idCard;
+            this.password1 = this.password;
             setTimeout(() => this.loadCaptcha = true, 500);
         },
         getUserProfile() {
@@ -83,6 +108,7 @@ let app = createApp({
                 }
             };
             axios.get(url, learnParams).then(res => {
+                alert("开始学习中。。。");
                 console.log(res.data.result);
             }).catch(() => {
             });
@@ -93,6 +119,9 @@ let app = createApp({
                 alert("正在停止学习中，请稍后。。。")
             }).catch(() => {
             });
+        },
+        getRandom() {
+            return Math.random();
         },
     },
     watch: {}

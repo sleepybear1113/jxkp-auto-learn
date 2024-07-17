@@ -1,5 +1,6 @@
 package cn.sleepybear.jxkpautolearn.logic;
 
+import cn.sleepybear.cacher.cache.ExpireWayEnum;
 import cn.sleepybear.jxkpautolearn.advice.ResultCodeConstant;
 import cn.sleepybear.jxkpautolearn.dto.CourseInfoDto;
 import cn.sleepybear.jxkpautolearn.dto.LessonInfoDto;
@@ -8,7 +9,7 @@ import cn.sleepybear.jxkpautolearn.exception.FrontException;
 import cn.sleepybear.jxkpautolearn.utils.CommonUtils;
 import cn.sleepybear.jxkpautolearn.utils.CookieUtils;
 import cn.sleepybear.jxkpautolearn.utils.MyCookieJar;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.collections4.CollectionUtils;
@@ -75,14 +76,14 @@ public class AutoLearnLogic {
         }
         Document document = Jsoup.parse(responseBody);
         document.select("input").forEach(element -> {
-            if (element.text().contains("__RequestVerificationToken")) {
+            if (element.outerHtml().contains("__RequestVerificationToken")) {
                 userInfoDto.setCaptchaToken(element.attr("value"));
             }
         });
         log.info("请求主页成功！");
     }
 
-    public static void getCaptchaToken(HttpServletRequest request, UserInfoDto userInfoDto) {
+    public static void getCaptchaToken(HttpServletResponse httpServletResponse, UserInfoDto userInfoDto) {
         log.info("正在请求验证码...");
         String url = BASE_URL + "/home/ValidateCode";
         Request request1 = new Request.Builder()
@@ -103,24 +104,37 @@ public class AutoLearnLogic {
                 throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！状态码：" + response.code());
             }
             byte[] bytes = body.bytes();
-            request.getSession().setAttribute("captcha", bytes);
+            // 将图片的流写入到 response 中
+            httpServletResponse.setContentType("image/jpeg");
+            httpServletResponse.getOutputStream().write(bytes);
+
             log.info("请求验证码成功！");
         } catch (IOException e) {
             throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！");
         }
     }
 
-    public static void login(String idCard, String password, String captcha, String captchaToken) {
+    public static void login(UserInfoDto userInfoDto, String captcha) {
         log.info("正在登录...");
         String url = BASE_URL + "/Login/AjaxDoLogin";
         RequestBody formBody = new FormBody.Builder()
-                .add("Uname", idCard)
-                .add("pass", password)
+                .add("Uname", userInfoDto.getIdCard())
+                .add("pass", userInfoDto.getPassword())
                 .add("valcode", captcha)
-                .add("__RequestVerificationToken", captchaToken)
+                .add("__RequestVerificationToken", userInfoDto.getCaptchaToken())
                 .build();
 
-        String responseBody = getResponseBody(url, new UserInfoDto(), formBody);
+        String responseBody = getResponseBody(url, userInfoDto, formBody);
+        if (responseBody == null) {
+            throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！");
+        }
+        if (!responseBody.contains("true")) {
+            throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, responseBody);
+        }
+
+        getUserProfile(userInfoDto);
+        CookieUtils.USER_CACHER.put(userInfoDto.getKey(), userInfoDto, 300L * 1000, ExpireWayEnum.AFTER_ACCESS);
+        CookieUtils.setWebUserCookie(userInfoDto.getKey(), CookieUtils.COOKIE_MAX_AGE);
     }
 
     /**
@@ -139,8 +153,8 @@ public class AutoLearnLogic {
         }
 
         if (responseBody.contains("请输入登录密码")) {
-            log.error("登录失效！");
-            return false;
+            log.error("登录失效！请重新登录");
+            throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "登录失效！请重新登录");
         }
 
         Document doc = Jsoup.parse(responseBody);
@@ -171,7 +185,12 @@ public class AutoLearnLogic {
             return courseInfoDtoList;
         }
 
-        Document doc = Jsoup.parse(decodeHtmlEntities(responseBody));
+        String html = decodeHtmlEntities(responseBody);
+        if (html.contains("请输入登录密码")) {
+            log.error("登录失效！请重新登录");
+            throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "登录失效！请重新登录");
+        }
+        Document doc = Jsoup.parse(html);
         Elements tables = doc.select("table");
         if (CollectionUtils.isEmpty(tables)) {
             return courseInfoDtoList;
@@ -322,6 +341,12 @@ public class AutoLearnLogic {
                 .build();
 
         String responseBody = getResponseBody(url, userInfoDto, formBody);
+        if (responseBody != null && responseBody.contains("请输入登录密码")) {
+            log.error("登录失效！");
+            userInfoDto.setStop(true);
+            userInfoDto.setStopping(false);
+            throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "登录失效！");
+        }
         log.info(responseBody);
     }
 
