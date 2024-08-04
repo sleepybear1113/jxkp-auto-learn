@@ -81,7 +81,9 @@ public class AutoLearnController {
         UserInfoDto userInfoDto = a(request);
         List<String> kcIdList1 = List.of(kcIdList);
         userInfoDto.setLessonKcIdList(kcIdList1);
-
+        if (!Boolean.TRUE.equals(userInfoDto.getStop())) {
+            throw new FrontException("当前有正在进行中的学习任务，无法重叠学习！");
+        }
         Thread.ofVirtual().start(() -> AutoLearnLogic.learn(userInfoDto));
     }
 
@@ -89,6 +91,23 @@ public class AutoLearnController {
     public static void stop(HttpServletRequest request) {
         UserInfoDto userInfoDto = a(request);
         userInfoDto.setStopping(true);
+    }
+
+    @RequestMapping("/forceDelete")
+    public Boolean forceDelete(String idCard) {
+        if (StringUtils.isBlank(idCard)) {
+            throw new FrontException("账号不能为空");
+        }
+
+        UserInfoDto userInfoDto = CookieUtils.USER_CACHER.get(idCard);
+        if (userInfoDto == null) {
+            throw new FrontException("账号不存在");
+        }
+
+        userInfoDto.setStop(true);
+        userInfoDto.setStopping(true);
+        CookieUtils.USER_CACHER.remove(idCard);
+        return true;
     }
 
     @RequestMapping("/getCaptchaImg")
