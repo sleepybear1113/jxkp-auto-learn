@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class CookieUtils {
     public static final Cacher<String, UserInfoDto> USER_CACHER = new CacherBuilder<String, UserInfoDto>().scheduleName("USER_CACHER").delay(30, TimeUnit.SECONDS).build();
+    public static final Cacher<String, Object> ADMIN_CACHER = new CacherBuilder<String, Object>().scheduleName("ADMIN_CACHER").delay(30, TimeUnit.SECONDS).build();
 
     public static final String COOKIE_NAME = "jxkp-auto-learn-user-cookie";
     public static final int COOKIE_MAX_AGE = Integer.MAX_VALUE;

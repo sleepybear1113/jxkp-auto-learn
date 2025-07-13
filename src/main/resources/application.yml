@@ -5,4 +5,8 @@ spring:
     name: jxkp-auto-learn
 
 app-config:
-  admin-usernames: 123,456
+  admin-users:
+    - username: admin
+      password: admin123
+    - username: superadmin
+      password: super123

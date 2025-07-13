@@ -75,9 +75,6 @@ public class AutoLearnLogic {
         }
         log.info("正在请求主页...");
         String responseBody = getResponseBodyString(BASE_URL, userInfoDto, null);
-        if (responseBody == null) {
-            return;
-        }
         Document document = Jsoup.parse(responseBody);
         for (Element element : document.select("input")) {
             if (element.outerHtml().contains("__RequestVerificationToken")) {
@@ -132,9 +129,6 @@ public class AutoLearnLogic {
         log.info("正在请求获取用户信息...");
 
         String responseBody = getResponseBodyString(url, userInfoDto, null);
-        if (responseBody == null) {
-            return false;
-        }
 
         if (responseBody.contains("请输入登录密码")) {
             throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "登录失效！请重新登录");
@@ -164,9 +158,6 @@ public class AutoLearnLogic {
         List<CourseInfoDto> courseInfoDtoList = new ArrayList<>();
 
         String responseBody = getResponseBodyString(url, userInfoDto, null);
-        if (responseBody == null) {
-            return courseInfoDtoList;
-        }
 
         String html = decodeHtmlEntities(responseBody);
         if (html.contains("请输入登录密码")) {
@@ -323,7 +314,7 @@ public class AutoLearnLogic {
                 .build();
 
         String responseBody = getResponseBodyString(url, userInfoDto, formBody);
-        if (responseBody != null && responseBody.contains("请输入登录密码")) {
+        if (responseBody.contains("请输入登录密码")) {
             log.error("登录失效！");
             userInfoDto.setStop(true);
             userInfoDto.setStopping(false);

@@ -1,5 +1,6 @@
 package cn.sleepybear.jxkpautolearn.config;
 
+import cn.sleepybear.jxkpautolearn.dto.AdminUserDto;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "app-config")
 public class AppConfig {
     private String[] adminUsernames;
+    private List<AdminUserDto> adminUsers;
 
     public List<String> getAdminUsernameList() {
         if (adminUsernames == null) {
