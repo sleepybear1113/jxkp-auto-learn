@@ -1,3 +1,46 @@
+// 全局消息显示函数
+function showGlobalMessage(text, type = 'danger') {
+    // 检查是否存在Vue应用实例
+    if (window.app && window.app.showMessage) {
+        window.app.showMessage(text, type);
+    } else {
+        // 如果Vue应用不存在，创建一个临时的消息显示
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            min-width: 300px;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        `;
+        
+        if (type === 'success') {
+            messageDiv.style.background = '#28a745';
+        } else if (type === 'warning') {
+            messageDiv.style.background = '#ffc107';
+            messageDiv.style.color = '#212529';
+        } else {
+            messageDiv.style.background = '#dc3545';
+        }
+        
+        messageDiv.textContent = text;
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 3000);
+    }
+}
+
 // axios 全局拦截器
 axios.interceptors.response.use(
     // 如果返回的状态码为 200，说明接口请求成功，可以正常拿到数据
@@ -11,10 +54,10 @@ axios.interceptors.response.use(
             } else {
                 let message = res.message;
                 if (code > -10) {
-                    alert(message);
+                    showGlobalMessage(message, 'danger');
                     return Promise.reject(response);
                 } else if (code) {
-                    alert("系统错误:" + message);
+                    showGlobalMessage("系统错误:" + message, 'danger');
                     // 直接拒绝往下面返回结果信息
                     return Promise.reject(response);
                 }
@@ -27,7 +70,7 @@ axios.interceptors.response.use(
     (error) => {
         let response = error.response;
         if (response == null) {
-            alert(`请求失败，请检查程序是否启动`);
+            showGlobalMessage(`请求失败，请检查程序是否启动`, 'danger');
             return Promise.reject(error);
         }
         let status = response.status;
@@ -37,12 +80,12 @@ axios.interceptors.response.use(
             return Promise.reject(error);
         }
         if (status >= 500) {
-            alert(`[${status}]服务器发生错误，无法处理！\n${request.responseURL}`);
+            showGlobalMessage(`[${status}]服务器发生错误，无法处理！`, 'danger');
             return Promise.reject(error);
         }
 
         let request = error.request;
-        alert(`请求失败，code = ${status}\n url：${request.responseURL}`);
+        showGlobalMessage(`请求失败，code = ${status}`, 'danger');
         return Promise.reject(error);
     }
 );

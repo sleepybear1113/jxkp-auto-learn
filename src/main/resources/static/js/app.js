@@ -18,12 +18,17 @@ let app = createApp({
             loading: false,
             message: "",
             messageType: "",
+            isLoggedIn: false,
         };
     },
     created() {
-        this.getUserProfile();
+        this.checkLoginStatus();
     },
     methods: {
+        checkLoginStatus() {
+            this.getUserProfile();
+        },
+        
         showMessage(text, type = 'success') {
             this.message = text;
             this.messageType = type;
@@ -62,6 +67,7 @@ let app = createApp({
             axios.get(url, loginParams).then(res => {
                 let data = res.data.result;
                 this.userInfoDto = new UserInfoDto(data);
+                this.isLoggedIn = true;
                 this.showMessage("登录成功！请点击\"获取所有课程\"");
                 this.tab = 3;
             }).catch((error) => {
@@ -87,6 +93,7 @@ let app = createApp({
             axios.get(url, addUserCookieParams).then(res => {
                 let data = res.data.result;
                 this.userInfoDto = new UserInfoDto(data);
+                this.isLoggedIn = true;
                 this.showMessage("Cookie登录成功！");
                 console.log(this.userInfoDto);
             }).catch((error) => {
@@ -121,17 +128,26 @@ let app = createApp({
                 let data = res.data.result;
                 this.userInfoDto = new UserInfoDto(data);
                 if (this.userInfoDto.name) {
+                    this.isLoggedIn = true;
                     this.showMessage("用户信息获取成功");
+                } else {
+                    this.isLoggedIn = false;
                 }
                 console.log(this.userInfoDto);
             }).catch((error) => {
-                this.showMessage("获取用户信息失败", "danger");
+                this.isLoggedIn = false;
+                // 不显示错误消息，只在控制台记录
+                console.log("用户未登录或登录已过期");
             }).finally(() => {
                 this.loading = false;
             });
         },
         
         getPersonTotalLessons() {
+            if (!this.isLoggedIn) {
+                this.showMessage("请先登录", "warning");
+                return;
+            }
             this.loading = true;
             let url = "/getPersonTotalLessons";
             axios.get(url).then(res => {
@@ -147,6 +163,11 @@ let app = createApp({
         },
         
         learn() {
+            if (!this.isLoggedIn) {
+                this.showMessage("请先登录", "warning");
+                return;
+            }
+            
             let kcIdList = [];
             this.courseInfoDtoList.forEach(item => {
                 if (item.status === "已学完") {
@@ -180,12 +201,31 @@ let app = createApp({
         },
         
         stop() {
+            if (!this.isLoggedIn) {
+                this.showMessage("请先登录", "warning");
+                return;
+            }
             this.loading = true;
             let url = "/stop";
             axios.get(url).then(res => {
                 this.showMessage("正在停止学习中，请稍后...", "warning");
             }).catch((error) => {
                 this.showMessage("停止学习失败", "danger");
+            }).finally(() => {
+                this.loading = false;
+            });
+        },
+        
+        logout() {
+            this.loading = true;
+            let url = "/logout";
+            axios.get(url).then(res => {
+                this.isLoggedIn = false;
+                this.userInfoDto = new UserInfoDto();
+                this.courseInfoDtoList = [];
+                this.showMessage("退出登录成功");
+            }).catch((error) => {
+                this.showMessage("退出登录失败", "danger");
             }).finally(() => {
                 this.loading = false;
             });
@@ -198,3 +238,6 @@ let app = createApp({
     watch: {}
 });
 app.mount("#app");
+
+// 将Vue应用实例暴露到全局，供axios-config.js使用
+window.app = app;

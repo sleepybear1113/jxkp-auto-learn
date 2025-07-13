@@ -87,6 +87,19 @@ public class AutoLearnController {
         return true;
     }
 
+    @RequestMapping("/logout")
+    public Boolean logout(HttpServletRequest request) {
+        UserInfoDto userInfoDto = a(request);
+        if (userInfoDto != null) {
+            // 停止正在进行的自动学习
+            userInfoDto.setStop(true);
+            userInfoDto.setStopping(true);
+            // 从缓存中删除用户信息
+            CookieUtils.USER_CACHER.remove(userInfoDto.getKey());
+        }
+        return true;
+    }
+
     /**
      * 登录前置接口，获取验证码图片
      *
@@ -144,6 +157,41 @@ public class AutoLearnController {
         userInfoDto.setIdCard(idCard);
         userInfoDto.setPassword(password);
         AutoLearnLogic.login(userInfoDto, captcha);
+        return userInfoDto;
+    }
+
+    @RequestMapping("/addUserCookie")
+    public UserInfoDto addUserCookie(String cookie) {
+        if (StringUtils.isBlank(cookie)) {
+            throw new FrontException("Cookie不能为空");
+        }
+
+        // 生成一个唯一的用户标识
+        String userKey = "cookie_user_" + System.currentTimeMillis();
+        
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setIdCard(userKey);
+        
+        // 创建CookieJar并添加Cookie
+        MyCookieJar myCookieJar = new MyCookieJar();
+        Cookie.Builder cookieBuilder = new Cookie.Builder()
+                .name(".AspNetCore.Cookies")
+                .value(cookie)
+                .domain("zy.jxkp.net")
+                .path("/");
+        myCookieJar.addCookie(cookieBuilder.build());
+        userInfoDto.setMyCookieJar(myCookieJar);
+
+        // 验证Cookie有效性
+        boolean isValid = AutoLearnLogic.getUserProfile(userInfoDto);
+        if (!isValid) {
+            throw new FrontException("Cookie无效或已过期，请重新获取");
+        }
+
+        // 缓存用户信息
+        CookieUtils.USER_CACHER.put(userInfoDto.getKey(), userInfoDto, 300L * 1000, ExpireWayEnum.AFTER_ACCESS);
+        CookieUtils.setWebUserCookie(userInfoDto.getKey(), CookieUtils.COOKIE_MAX_AGE);
+        
         return userInfoDto;
     }
 

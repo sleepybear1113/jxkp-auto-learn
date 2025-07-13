@@ -296,7 +296,7 @@
             </div>
 
         <!-- 登录卡片 -->
-        <div class="card">
+        <div v-if="!isLoggedIn" class="card">
             <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">用户登录</h4>
             
             <!-- 登录方式切换 -->
@@ -355,20 +355,28 @@
             </div>
         </div>
 
+        <!-- 未登录提示 -->
+        <div v-if="!isLoggedIn" class="card">
+            <div class="alert alert-warning" style="text-align: center;">
+                <strong>提示：</strong>请先登录以使用系统功能
+            </div>
+        </div>
+
         <div class="divider"></div>
 
         <!-- 功能操作卡片 -->
-        <div class="card">
+        <div v-if="isLoggedIn" class="card">
             <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">系统功能</h4>
             
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <button class="btn btn-primary" @click="getUserProfile">获取用户信息</button>
                 <button class="btn btn-primary" @click="getPersonTotalLessons">获取所有课程</button>
+                <button class="btn btn-danger" @click="logout">退出登录</button>
             </div>
         </div>
 
         <!-- 用户信息显示 -->
-        <div v-if="userInfoDto.name" class="card">
+        <div v-if="isLoggedIn && userInfoDto.name" class="card">
             <div class="user-info">
                 <h5 style="margin: 0 0 10px 0; color: #1976d2;">用户信息</h5>
                 <p style="margin: 0; color: #495057;"><strong>姓名：</strong>{{userInfoDto.name}}</p>
@@ -377,7 +385,7 @@
         </div>
 
         <!-- 课程管理卡片 -->
-        <div v-if="courseInfoDtoList && courseInfoDtoList.length > 0" class="card">
+        <div v-if="isLoggedIn && courseInfoDtoList && courseInfoDtoList.length > 0" class="card">
             <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">课程管理</h4>
             
             <div class="alert alert-warning">
