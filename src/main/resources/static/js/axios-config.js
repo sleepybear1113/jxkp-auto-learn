@@ -1,44 +1,70 @@
 // 全局消息显示函数
 function showGlobalMessage(text, type = 'danger') {
-    // 检查是否存在Vue应用实例
-    if (window.app && window.app.showMessage) {
-        window.app.showMessage(text, type);
-    } else {
-        // 如果Vue应用不存在，创建一个临时的消息显示
-        const messageDiv = document.createElement('div');
-        messageDiv.style.cssText = `
+    // 消息容器id
+    const containerId = 'global-message-container';
+    let container = document.getElementById(containerId);
+    if (!container) {
+        container = document.createElement('div');
+        container.id = containerId;
+        container.style.cssText = `
             position: fixed;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            min-width: 300px;
-            padding: 15px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            pointer-events: none;
         `;
-        
-        if (type === 'success') {
-            messageDiv.style.background = '#28a745';
-        } else if (type === 'warning') {
-            messageDiv.style.background = '#ffc107';
-            messageDiv.style.color = '#212529';
-        } else {
-            messageDiv.style.background = '#dc3545';
-        }
-        
-        messageDiv.textContent = text;
-        document.body.appendChild(messageDiv);
-        
+        document.body.appendChild(container);
+    }
+
+    // 创建消息div
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        margin-top: 10px;
+        min-width: 300px;
+        max-width: 400px;
+        padding: 15px 24px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        background: #dc3545;
+        opacity: 0.97;
+        pointer-events: auto;
+        transition: opacity 0.3s;
+    `;
+    if (type === 'success') {
+        messageDiv.style.background = '#28a745';
+    } else if (type === 'warning') {
+        messageDiv.style.background = '#ffc107';
+        messageDiv.style.color = '#212529';
+    }
+    messageDiv.textContent = text;
+
+    // 添加到容器
+    container.appendChild(messageDiv);
+
+    // 最多显示8个，超出移除最早的
+    while (container.children.length > 8) {
+        container.removeChild(container.firstChild);
+    }
+
+    // 3秒后自动消失
+    setTimeout(() => {
+        messageDiv.style.opacity = '0';
         setTimeout(() => {
             if (messageDiv.parentNode) {
                 messageDiv.parentNode.removeChild(messageDiv);
             }
-        }, 3000);
-    }
+            // 如果容器空了，移除容器
+            if (container.children.length === 0 && container.parentNode) {
+                container.parentNode.removeChild(container);
+            }
+        }, 300);
+    }, 3000);
 }
 
 // axios 全局拦截器

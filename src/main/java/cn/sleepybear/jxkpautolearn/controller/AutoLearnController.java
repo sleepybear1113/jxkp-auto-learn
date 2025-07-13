@@ -38,27 +38,27 @@ public class AutoLearnController {
 
     @RequestMapping("/getUserProfile")
     public UserInfoDto getUserProfile(HttpServletRequest request) {
-        UserInfoDto userInfoDto = a(request);
+        UserInfoDto userInfoDto = CookieUtils.getUserInfoDtoFromRequest(request,false);
         AutoLearnLogic.getUserProfile(userInfoDto);
-        
+
         // 检查用户是否在白名单中
         if (!userWhitelistService.isUserInWhitelist(userInfoDto)) {
             String userIdentifier = StringUtils.isNotBlank(userInfoDto.getName()) ? userInfoDto.getName() :
-                                   StringUtils.isNotBlank(userInfoDto.getIdCard()) ? userInfoDto.getIdCard() :
-                                   StringUtils.isNotBlank(userInfoDto.getTel()) ? userInfoDto.getTel() : "未知用户";
-            
+                    StringUtils.isNotBlank(userInfoDto.getIdCard()) ? userInfoDto.getIdCard() :
+                            StringUtils.isNotBlank(userInfoDto.getTel()) ? userInfoDto.getTel() : "未知用户";
+
             // 执行退出登录操作
             logout(request);
-            
+
             throw new FrontException("用户" + userIdentifier + "不在白名单内，请联系管理员添加");
         }
-        
+
         return userInfoDto;
     }
 
     @RequestMapping("/getPersonTotalLessons")
     public static List<CourseInfoDto> getPersonTotalLessons(HttpServletRequest request) {
-        UserInfoDto userInfoDto = a(request);
+        UserInfoDto userInfoDto = CookieUtils.getUserInfoDtoFromRequest(request,false);
         return AutoLearnLogic.getPersonTotalLessons(userInfoDto);
     }
 
@@ -68,7 +68,7 @@ public class AutoLearnController {
             throw new FrontException("课程 ID 不能为空");
         }
 
-        UserInfoDto userInfoDto = a(request);
+        UserInfoDto userInfoDto = CookieUtils.getUserInfoDtoFromRequest(request,false);
         List<String> kcIdList1 = List.of(kcIdList.split(","));
         userInfoDto.setLessonKcIdList(kcIdList1);
         if (!Boolean.TRUE.equals(userInfoDto.getStop())) {
@@ -79,7 +79,7 @@ public class AutoLearnController {
 
     @RequestMapping("/stop")
     public static void stop(HttpServletRequest request) {
-        UserInfoDto userInfoDto = a(request);
+        UserInfoDto userInfoDto = CookieUtils.getUserInfoDtoFromRequest(request,false);
         userInfoDto.setStopping(true);
     }
 
@@ -102,7 +102,7 @@ public class AutoLearnController {
 
     @RequestMapping("/logout")
     public Boolean logout(HttpServletRequest request) {
-        UserInfoDto userInfoDto = a(request);
+        UserInfoDto userInfoDto = CookieUtils.getUserInfoDtoFromRequest(request,false);
         // 停止正在进行的自动学习
         userInfoDto.setStop(true);
         userInfoDto.setStopping(true);
@@ -168,19 +168,19 @@ public class AutoLearnController {
         userInfoDto.setIdCard(idCard);
         userInfoDto.setPassword(password);
         AutoLearnLogic.login(userInfoDto, captcha);
-        
+
         // 检查用户是否在白名单中
         if (!userWhitelistService.isUserInWhitelist(userInfoDto)) {
             String userIdentifier = StringUtils.isNotBlank(userInfoDto.getName()) ? userInfoDto.getName() :
-                                   StringUtils.isNotBlank(userInfoDto.getIdCard()) ? userInfoDto.getIdCard() :
-                                   StringUtils.isNotBlank(userInfoDto.getTel()) ? userInfoDto.getTel() : "未知用户";
-            
+                    StringUtils.isNotBlank(userInfoDto.getIdCard()) ? userInfoDto.getIdCard() :
+                            StringUtils.isNotBlank(userInfoDto.getTel()) ? userInfoDto.getTel() : "未知用户";
+
             // 执行退出登录操作
             CookieUtils.USER_CACHER.remove(userInfoDto.getKey());
-            
+
             throw new FrontException("用户" + userIdentifier + "不在白名单内，请联系管理员添加");
         }
-        
+
         return userInfoDto;
     }
 
@@ -192,10 +192,10 @@ public class AutoLearnController {
 
         // 生成一个唯一的用户标识
         String userKey = "cookie_user_" + System.currentTimeMillis();
-        
+
         UserInfoDto userInfoDto = new UserInfoDto();
         userInfoDto.setIdCard(userKey);
-        
+
         // 创建CookieJar并添加Cookie
         MyCookieJar myCookieJar = new MyCookieJar();
         Cookie.Builder cookieBuilder = new Cookie.Builder()
@@ -215,35 +215,17 @@ public class AutoLearnController {
         // 检查用户是否在白名单中
         if (!userWhitelistService.isUserInWhitelist(userInfoDto)) {
             String userIdentifier = StringUtils.isNotBlank(userInfoDto.getName()) ? userInfoDto.getName() :
-                                   StringUtils.isNotBlank(userInfoDto.getIdCard()) ? userInfoDto.getIdCard() :
-                                   StringUtils.isNotBlank(userInfoDto.getTel()) ? userInfoDto.getTel() : "未知用户";
-            
+                    StringUtils.isNotBlank(userInfoDto.getIdCard()) ? userInfoDto.getIdCard() :
+                            StringUtils.isNotBlank(userInfoDto.getTel()) ? userInfoDto.getTel() : "未知用户";
+
             throw new FrontException("用户" + userIdentifier + "不在白名单内，请联系管理员添加");
         }
 
         // 缓存用户信息
         CookieUtils.USER_CACHER.put(userInfoDto.getKey(), userInfoDto, 300L * 1000, ExpireWayEnum.AFTER_ACCESS);
         CookieUtils.setWebUserCookie(userInfoDto.getKey(), CookieUtils.COOKIE_MAX_AGE);
-        
-        return userInfoDto;
-    }
-
-    private static UserInfoDto a(HttpServletRequest request) {
-        jakarta.servlet.http.Cookie cookie = CookieUtils.getCookie(request);
-        if (cookie == null) {
-            throw new FrontException("请先添加 Cookie或者输入用户名登录");
-        }
-
-        String key = cookie.getValue();
-        if (StringUtils.isBlank(key)) {
-            throw new FrontException("Cookie 信息为空");
-        }
-
-        UserInfoDto userInfoDto = CookieUtils.USER_CACHER.get(key);
-        if (userInfoDto == null) {
-            throw new FrontException("Cookie 信息已过期，请重新添加");
-        }
 
         return userInfoDto;
     }
+
 }

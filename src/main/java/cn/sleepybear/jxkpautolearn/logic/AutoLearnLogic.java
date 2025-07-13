@@ -214,9 +214,21 @@ public class AutoLearnLogic {
                         break;
                 }
             }
+            
+            // 计算学习进度
+            if (courseInfoDto.getTotalLessonCount() != null && courseInfoDto.getTotalLessonCount() > 0 
+                && courseInfoDto.getLearnedCount() != null) {
+                courseInfoDto.setProgress((courseInfoDto.getLearnedCount() * 100) / courseInfoDto.getTotalLessonCount());
+            } else {
+                courseInfoDto.setProgress(0);
+            }
         }
 
         courseInfoDtoList.removeIf(CourseInfoDto::empty);
+        
+        // 更新学习状态
+        updateCourseLearningStatus(courseInfoDtoList, userInfoDto);
+        
         return courseInfoDtoList;
     }
 
@@ -266,7 +278,7 @@ public class AutoLearnLogic {
                     if (Boolean.TRUE.equals(userInfoDto.getStopping())) {
                         userInfoDto.setStop(true);
                         userInfoDto.setStopping(false);
-                        log.info("学习结束！");
+                        log.info("1学习结束！");
                         return;
                     }
 
@@ -276,7 +288,7 @@ public class AutoLearnLogic {
                         if (Boolean.TRUE.equals(userInfoDto.getStopping())) {
                             userInfoDto.setStop(true);
                             userInfoDto.setStopping(false);
-                            log.info("学习结束！");
+                            log.info("2学习结束！");
                             return;
                         }
                         CommonUtils.sleep(1000);
@@ -497,5 +509,44 @@ public class AutoLearnLogic {
             return;
         }
         cache.setLastLearnTime(now);
+    }
+
+    private static void updateCourseLearningStatus(List<CourseInfoDto> courseInfoDtoList, UserInfoDto userInfoDto) {
+        if (courseInfoDtoList == null || courseInfoDtoList.isEmpty()) {
+            return;
+        }
+        
+        // 检查是否有正在进行的任务
+        boolean isLearning = !Boolean.TRUE.equals(userInfoDto.getStop());
+        List<String> selectedKcIds = userInfoDto.getLessonKcIdList();
+        
+        if (isLearning && selectedKcIds != null && !selectedKcIds.isEmpty()) {
+            // 找到第一个选中的课程作为正在学习的课程
+            String currentLearningKcId = selectedKcIds.getFirst();
+            
+            for (CourseInfoDto course : courseInfoDtoList) {
+                if ("已学完".equals(course.getStatus())) {
+                    course.setLearningStatus("已完成");
+                } else if (selectedKcIds.contains(course.getKcId())) {
+                    if (course.getKcId().equals(currentLearningKcId)) {
+                        course.setLearningStatus("正在学习");
+                        course.setCurrentLesson("正在学习中...");
+                    } else {
+                        course.setLearningStatus("等待学习");
+                    }
+                } else {
+                    course.setLearningStatus("-");
+                }
+            }
+        } else {
+            // 没有正在学习的任务，所有课程都显示为已完成或-
+            for (CourseInfoDto course : courseInfoDtoList) {
+                if ("已学完".equals(course.getStatus())) {
+                    course.setLearningStatus("已完成");
+                } else {
+                    course.setLearningStatus("-");
+                }
+            }
+        }
     }
 }

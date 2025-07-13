@@ -22,21 +22,27 @@ let app = createApp({
         };
     },
     created() {
-        this.checkLoginStatus();
+        this.getUserProfile(true);
     },
     methods: {
-        checkLoginStatus() {
-            this.getUserProfile();
-        },
-        
         showMessage(text, type = 'success') {
-            this.message = text;
-            this.messageType = type;
-            setTimeout(() => {
-                this.message = "";
-            }, 3000);
+            showGlobalMessage(text, type);
         },
-        
+
+        // 获取学习状态样式类
+        getLearningStatusClass(status) {
+            switch (status) {
+                case '正在学习':
+                    return 'status-learning-active';
+                case '等待学习':
+                    return 'status-waiting';
+                case '已完成':
+                    return 'status-completed';
+                default:
+                    return 'status-default';
+            }
+        },
+
         login() {
             // 详细的表单验证
             let missingFields = [];
@@ -49,12 +55,12 @@ let app = createApp({
             if (!this.captcha || !this.captcha.trim()) {
                 missingFields.push("验证码");
             }
-            
+
             if (missingFields.length > 0) {
                 this.showMessage(`请填写：${missingFields.join("、")}`, "danger");
                 return;
             }
-            
+
             this.loading = true;
             let url = "/login";
             let loginParams = {
@@ -70,19 +76,21 @@ let app = createApp({
                 this.isLoggedIn = true;
                 this.showMessage("登录成功！请点击\"获取所有课程\"");
                 this.tab = 3;
+
+                this.getPersonTotalLessons();
             }).catch((error) => {
                 this.showMessage("登录失败，请检查信息是否正确", "danger");
             }).finally(() => {
                 this.loading = false;
             });
         },
-        
+
         addUserCookie() {
             if (!this.userCookie || !this.userCookie.trim()) {
                 this.showMessage("请填写：Cookie", "danger");
                 return;
             }
-            
+
             this.loading = true;
             let url = "/addUserCookie";
             let addUserCookieParams = {
@@ -102,12 +110,12 @@ let app = createApp({
                 this.loading = false;
             });
         },
-        
+
         getCaptchaImg() {
             let url = "/getCaptchaImg";
             return `${url}?t=${new Date().getTime()}&idCard=${this.idCard}&password=${this.password}`;
         },
-        
+
         getCaptcha() {
             if (!this.idCard || !this.password) {
                 this.showMessage("请输入账号和密码！", "danger");
@@ -120,8 +128,8 @@ let app = createApp({
             setTimeout(() => this.loadCaptcha = true, 500);
             this.showMessage("验证码已刷新", "warning");
         },
-        
-        getUserProfile() {
+
+        getUserProfile(all = false) {
             this.loading = true;
             let url = "/getUserProfile";
             axios.get(url).then(res => {
@@ -130,10 +138,13 @@ let app = createApp({
                 if (this.userInfoDto.name) {
                     this.isLoggedIn = true;
                     this.showMessage("用户信息获取成功");
+
+                    if (all === true) {
+                        this.getPersonTotalLessons();
+                    }
                 } else {
                     this.isLoggedIn = false;
                 }
-                console.log(this.userInfoDto);
             }).catch((error) => {
                 this.isLoggedIn = false;
                 // 不显示错误消息，只在控制台记录
@@ -142,7 +153,7 @@ let app = createApp({
                 this.loading = false;
             });
         },
-        
+
         getPersonTotalLessons() {
             if (!this.isLoggedIn) {
                 this.showMessage("请先登录", "warning");
@@ -161,13 +172,13 @@ let app = createApp({
                 this.loading = false;
             });
         },
-        
+
         learn() {
             if (!this.isLoggedIn) {
                 this.showMessage("请先登录", "warning");
                 return;
             }
-            
+
             let kcIdList = [];
             this.courseInfoDtoList.forEach(item => {
                 if (item.status === "已学完") {
@@ -199,7 +210,7 @@ let app = createApp({
                 this.loading = false;
             });
         },
-        
+
         stop() {
             if (!this.isLoggedIn) {
                 this.showMessage("请先登录", "warning");
@@ -215,7 +226,7 @@ let app = createApp({
                 this.loading = false;
             });
         },
-        
+
         logout() {
             this.loading = true;
             let url = "/logout";
@@ -230,7 +241,7 @@ let app = createApp({
                 this.loading = false;
             });
         },
-        
+
         getRandom() {
             return Math.random();
         },

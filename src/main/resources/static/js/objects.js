@@ -11,13 +11,17 @@ class UserInfoDto {
 
 class CourseInfoDto {
     constructor(props = {}) {
-        this.checked = props.checked;
+        this.checked = props.checked || false;
         this.kcId = props.kcId;
         this.name = props.name;
         this.learnedCount = props.learnedCount;
         this.totalLessonCount = props.totalLessonCount;
         this.hours = props.hours;
         this.status = props.status;
+        // 新增学习状态相关字段
+        this.learningStatus = props.learningStatus || "-";
+        this.currentLesson = props.currentLesson;
+        this.progress = props.progress || 0;
     }
 }
 

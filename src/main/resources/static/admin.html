@@ -243,8 +243,7 @@
 <script src="lib/axios.min.js"></script>
 <link href="lib/bootstrap@5.3.3.min.css" rel="stylesheet">
 <script src="lib/bootstrap@5.3.3.min.js"></script>
-
-<script src="js/axios-config.js?v=1.0.1"></script>
+<script src="js/axios-config.js?v=1.0.2"></script>
 
 <body>
 <div id="admin">
@@ -275,13 +274,15 @@
             <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">管理员登录</h4>
 
             <div class="form-group">
-                <label class="form-label">管理员用户名</label>
-                <input class="form-control" v-model="adminUsername" placeholder="请输入管理员用户名">
+                <label class="form-label" for="admin-username">管理员用户名</label>
+                <input id="admin-username" class="form-control" v-model="adminUsername"
+                       placeholder="请输入管理员用户名">
             </div>
 
             <div class="form-group">
-                <label class="form-label">管理员密码</label>
-                <input class="form-control" type="password" v-model="adminPassword" placeholder="请输入管理员密码">
+                <label class="form-label" for="admin-password">管理员密码</label>
+                <input id="admin-password" class="form-control" type="password" v-model="adminPassword"
+                       placeholder="请输入管理员密码">
             </div>
 
             <div class="btn-center">
@@ -293,19 +294,15 @@
         <div v-if="isAdminLoggedIn" class="card">
             <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">白名单管理</h4>
 
-            <!-- 统计信息 -->
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-number">{{ whitelistUsers.length }}</div>
-                    <div class="stat-label">白名单用户数</div>
-                </div>
+            <!-- 管理员信息 -->
+            <div class="alert alert-success" style="text-align:center; margin-bottom: 20px;">
+                当前管理员：<strong>{{ adminUsername }}</strong>
             </div>
 
             <!-- 添加用户 -->
             <div class="form-group">
-                <label class="form-label">添加用户到白名单</label>
-                <textarea class="form-control textarea-large"
-                          v-model="newUsers"
+                <label class="form-label" for="add-users-textarea">添加用户到白名单</label>
+                <textarea id="add-users-textarea" class="form-control textarea-large" v-model="newUsers"
                           placeholder="请输入用户信息，一行一个用户（可以是身份证号码、姓名、手机号）"></textarea>
             </div>
 
@@ -318,21 +315,16 @@
 
         <!-- 白名单用户列表 -->
         <div v-if="isAdminLoggedIn && whitelistUsers.length > 0" class="card">
-            <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">白名单用户列表</h4>
-
-            <div class="alert alert-warning">
-                <strong>提示：</strong>勾选要删除的用户，然后点击删除按钮。支持批量删除。
-            </div>
+            <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">白名单用户列表({{whitelistUsers.length}})</h4>
 
             <div style="overflow-x: auto;">
                 <table class="user-table">
                     <thead>
                     <tr>
                         <th style="width: 60px;">
-                            <input type="checkbox"
-                                   class="checkbox-custom"
-                                   @change="toggleSelectAll"
-                                   :checked="isAllSelected">
+                            <label for="select-all-checkbox"></label>
+                            <input type="checkbox" class="checkbox-custom" id="select-all-checkbox"
+                                   @change="toggleSelectAll" :checked="isAllSelected">
                         </th>
                         <th style="width: 80px;">序号</th>
                         <th>用户信息</th>
@@ -342,9 +334,10 @@
                     <tbody>
                     <tr v-for="(user, index) in whitelistUsers" :key="index">
                         <td>
-                            <input type="checkbox"
-                                   class="checkbox-custom"
-                                   v-model="user.selected">
+                            <label>
+                                <input type="checkbox" class="checkbox-custom"
+                                       :id="'user-checkbox-' + index" v-model="user.selected">
+                            </label>
                         </td>
                         <td>{{ index + 1 }}</td>
                         <td>{{ user.value }}</td>
@@ -372,222 +365,6 @@
     </div>
 </div>
 
-<script>
-    const {createApp} = Vue;
-
-    createApp({
-        data() {
-            return {
-                isAdminLoggedIn: false,
-                adminUsername: '',
-                adminPassword: '',
-                whitelistUsers: [],
-                newUsers: '',
-                loading: false,
-                message: '',
-                messageType: 'success'
-            }
-        },
-        computed: {
-            selectedUserCount() {
-                return this.whitelistUsers.filter(user => user.selected).length;
-            },
-            hasSelectedUsers() {
-                return this.selectedUserCount > 0;
-            },
-            isAllSelected() {
-                return this.whitelistUsers.length > 0 && this.whitelistUsers.every(user => user.selected);
-            }
-        },
-        mounted() {
-            this.checkAdminLogin();
-        },
-        methods: {
-            async adminLogin() {
-                if (!this.adminUsername || !this.adminPassword) {
-                    this.showMessage('请输入管理员用户名和密码', 'warning');
-                    return;
-                }
-
-                this.loading = true;
-                try {
-                    const response = await axios.post('/admin/login', null, {
-                        params: {
-                            username: this.adminUsername,
-                            password: this.adminPassword
-                        }
-                    });
-
-                    let result = response.data.result;
-                    if (result?.success) {
-                        this.isAdminLoggedIn = true;
-                        this.showMessage('管理员登录成功', 'success');
-                        this.loadWhitelist();
-                    } else {
-                        this.showMessage(response.data.result?.message || '登录失败', 'danger');
-                    }
-                } catch (error) {
-                    this.showMessage(error.response?.data?.message || '登录失败', 'danger');
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            async adminLogout() {
-                this.isAdminLoggedIn = false;
-                this.adminUsername = '';
-                this.adminPassword = '';
-                this.whitelistUsers = [];
-                this.newUsers = '';
-                this.showMessage('已退出管理员登录', 'success');
-            },
-
-            async loadWhitelist() {
-                this.loading = true;
-                try {
-                    const response = await axios.get('/admin/getWhitelist');
-                    if (response.data.result?.success) {
-                        this.whitelistUsers = response.data.result?.data.map(user => ({
-                            value: user,
-                            selected: false
-                        }));
-                    }
-                } catch (error) {
-                    this.showMessage('加载白名单失败', 'danger');
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            async addUsers() {
-                if (!this.newUsers.trim()) {
-                    this.showMessage('请输入要添加的用户信息', 'warning');
-                    return;
-                }
-
-                this.loading = true;
-                try {
-                    const response = await axios.post('/admin/addUsers', null, {
-                        params: {
-                            users: this.newUsers
-                        }
-                    });
-
-                    if (response.data.result?.success) {
-                        this.showMessage(`成功添加 ${response.data.result.addedCount} 个用户到白名单`, 'success');
-                        this.newUsers = '';
-                        this.loadWhitelist();
-                    } else {
-                        this.showMessage(response.data.result?.message || '添加用户失败', 'danger');
-                    }
-                } catch (error) {
-                    this.showMessage(error.response?.data?.message || '添加用户失败', 'danger');
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            async removeSelectedUsers() {
-                const selectedUsers = this.whitelistUsers
-                    .filter(user => user.selected)
-                    .map(user => user.value);
-
-                if (selectedUsers.length === 0) {
-                    this.showMessage('请选择要删除的用户', 'warning');
-                    return;
-                }
-
-                if (!confirm(`确定要删除选中的 ${selectedUsers.length} 个用户吗？`)) {
-                    return;
-                }
-
-                this.loading = true;
-                try {
-                    const response = await axios.post('/admin/removeUsers', null, {
-                        params: {
-                            users: selectedUsers.join(',')
-                        }
-                    });
-
-                    if (response.data.result?.success) {
-                        this.showMessage(`成功删除 ${response.data.result.removedCount} 个用户`, 'success');
-                        this.loadWhitelist();
-                    } else {
-                        this.showMessage(response.data.result?.message || '删除用户失败', 'danger');
-                    }
-                } catch (error) {
-                    this.showMessage(error.response?.data?.message || '删除用户失败', 'danger');
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            async removeSingleUser(index) {
-                const user = this.whitelistUsers[index];
-                if (!confirm(`确定要删除用户 "${user.value}" 吗？`)) {
-                    return;
-                }
-
-                this.loading = true;
-                try {
-                    const response = await axios.post('/admin/removeUsers', null, {
-                        params: {
-                            users: user.value
-                        }
-                    });
-
-                    if (response.data.result?.success) {
-                        this.showMessage('用户删除成功', 'success');
-                        this.loadWhitelist();
-                    } else {
-                        this.showMessage(response.data.result?.message || '删除用户失败', 'danger');
-                    }
-                } catch (error) {
-                    this.showMessage(error.response?.data?.message || '删除用户失败', 'danger');
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            async refreshWhitelist() {
-                this.loading = true;
-                try {
-                    const response = await axios.get('/admin/refreshWhitelist');
-                    if (response.data.result?.success) {
-                        this.whitelistUsers = response.data.result.data.map(user => ({
-                            value: user,
-                            selected: false
-                        }));
-                        this.showMessage('白名单刷新成功', 'success');
-                    }
-                } catch (error) {
-                    this.showMessage('刷新白名单失败', 'danger');
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            toggleSelectAll() {
-                const newState = !this.isAllSelected;
-                this.whitelistUsers.forEach(user => {
-                    user.selected = newState;
-                });
-            },
-
-            checkAdminLogin() {
-                // 这里可以添加检查管理员登录状态的逻辑
-                // 暂时留空，因为管理员登录状态管理比较简单
-            },
-
-            showMessage(message, type = 'success') {
-                this.message = message;
-                this.messageType = type;
-                setTimeout(() => {
-                    this.message = '';
-                }, 3000);
-            }
-        }
-    }).mount('#admin');
-</script>
+<script src="js/admin.js?v=1.0.2"></script>
 </body>
 </html> 
