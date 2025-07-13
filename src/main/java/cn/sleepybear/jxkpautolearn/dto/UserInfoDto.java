@@ -35,6 +35,16 @@ public class UserInfoDto implements Serializable {
 
     private String captchaToken;
 
+    private Boolean admin;
+
+    public String getPassword() {
+        return null;
+    }
+
+    public String fetchPwd() {
+        return password;
+    }
+
     public String getKey() {
         return idCard;
     }

@@ -4,6 +4,265 @@
     <meta charset="UTF-8">
     <title>继续教育课时Go</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h2 {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .tab-btn {
+            padding: 12px 24px;
+            border: 2px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .tab-btn.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .tab-btn:hover {
+            background: #0056b3;
+            border-color: #0056b3;
+            color: white;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+        
+        .btn-center {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .captcha-container {
+            margin-top: 15px;
+        }
+        
+        .captcha-img {
+            max-width: 120px;
+            height: 40px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .user-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .course-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .course-table th,
+        .course-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .course-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .course-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .checkbox-custom {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .status-completed {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .status-learning {
+            color: #ffc107;
+            font-weight: 500;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e9ecef;
+            margin: 30px 0;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .tab-buttons {
+                flex-direction: column;
+            }
+            
+            .course-table {
+                font-size: 12px;
+            }
+            
+            .course-table th,
+            .course-table td {
+                padding: 8px 4px;
+            }
+        }
+    </style>
 </head>
 <script src="lib/vue.3.4.26.global.min.js"></script>
 <script src="lib/axios.min.js"></script>
@@ -13,111 +272,159 @@
 <script src="js/axios-config.js?v=1.0.1"></script>
 <script src="js/objects.js?vVvVvV=1.0.1"></script>
 <script src="js/util.js?vVvVvVvVv=1.0.1"></script>
+
 <body>
-<div id="app">
-    <div style="margin-top: 100px">
-        <div style="text-align: center;">
-            <h2>继续教育课时Go</h2>
-        </div>
-
-
-        <div class="modal-body">
-            <div style="text-align: center">
-                <button class="w-25 btn rounded-3 btn-secondary" @click="tab = 1">使用Cookie登录</button>
-                <button class="w-25 btn rounded-3 btn-secondary" @click="tab = 2">使用用户名密码登录</button>
+    <div id="app">
+        <div class="container">
+            <!-- 消息提示 -->
+            <div v-if="message" :class="'alert alert-' + messageType" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; min-width: 300px;">
+                {{ message }}
+            </div>
+            
+            <!-- 加载遮罩 -->
+            <div v-if="loading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: flex; align-items: center; justify-content: center;">
+                <div style="background: white; padding: 30px; border-radius: 10px; text-align: center;">
+                    <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+                    <p style="margin: 0; color: #495057;">处理中...</p>
+                </div>
+            </div>
+            
+            <!-- 页面标题 -->
+            <div class="header">
+                <h2>继续教育课时Go</h2>
+                <p style="color: #6c757d; margin: 0;">自动化学习管理系统</p>
             </div>
 
+        <!-- 登录卡片 -->
+        <div class="card">
+            <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">用户登录</h4>
+            
+            <!-- 登录方式切换 -->
+            <div class="tab-buttons">
+                <button class="tab-btn" :class="{ active: tab === 1 }" @click="tab = 1">
+                    Cookie登录
+                </button>
+                <button class="tab-btn" :class="{ active: tab === 2 }" @click="tab = 2">
+                    用户名密码登录
+                </button>
+            </div>
+
+            <!-- Cookie登录 -->
             <div v-show="tab === 1">
-                <label class="col-sm-12 col-12">
-                    Cookie
+                <div class="form-group">
+                    <label class="form-label">Cookie</label>
                     <input class="form-control" v-model="userCookie" placeholder="请输入Cookie">
-                </label>
-                <div style="text-align: center;">
-                    <button class="w-25 btn rounded-3 btn-secondary" @click="addUserCookie">Cookie登录</button>
+                </div>
+                <div class="btn-center">
+                    <button class="btn btn-primary" @click="addUserCookie">Cookie登录</button>
                 </div>
             </div>
-            <br/>
 
+            <!-- 用户名密码登录 -->
             <div v-show="tab === 2">
-                <label class="col-sm-12 col-12">
-                    用户名
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
                     <input class="form-control" v-model="idCard" placeholder="请输入用户名">
-                </label>
-                <br/>
+                </div>
 
-                <label class="col-sm-12 col-12">
-                    密码
-                    <input class="form-control" v-model="password" placeholder="请输入密码">
-                </label>
-                <button class="w-25 btn rounded-3 btn-secondary" @click="getCaptcha">获取验证码</button>
-                <label v-if="loadCaptcha" class="col-sm-12 col-12">
-                    验证码
-                    <input class="form-control" v-model="captcha" placeholder="验证码">
-                    <label id="captchaImgLabel" class="col-sm-12 col-12">
-                        <img :src="'/api-jxkp-auto-learn/getCaptchaImg?idCard=' + idCard1 + '&password=' + password1 + '&t=' + t">
-                    </label>
-                </label>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input class="form-control" type="password" v-model="password" placeholder="请输入密码">
+                </div>
 
-                <div style="text-align: center;">
-                    <button class="w-25 btn rounded-3 btn-secondary" @click="login">用户名登录</button>
+                <div class="btn-center">
+                    <button class="btn btn-secondary" @click="getCaptcha">获取验证码</button>
+                </div>
+
+                <div v-if="loadCaptcha" class="captcha-container">
+                    <div class="form-group" style="display: flex; align-items: end; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label class="form-label">验证码</label>
+                            <input class="form-control" v-model="captcha" placeholder="请输入验证码">
+                        </div>
+                        <div style="flex-shrink: 0;">
+                            <img :src="'/api-jxkp-auto-learn/getCaptchaImg?idCard=' + idCard1 + '&password=' + password1 + '&t=' + t" 
+                                 class="captcha-img" alt="验证码" style="margin-top: 0;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-center">
+                    <button class="btn btn-primary" @click="login">用户名登录</button>
                 </div>
             </div>
         </div>
 
-        <hr/>
+        <div class="divider"></div>
 
-        <div style="text-align: center;">
-            <button class="w-25 btn rounded-3 btn-secondary" @click="getUserProfile">获取用户信息</button>
+        <!-- 功能操作卡片 -->
+        <div class="card">
+            <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">系统功能</h4>
+            
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" @click="getUserProfile">获取用户信息</button>
+                <button class="btn btn-primary" @click="getPersonTotalLessons">获取所有课程</button>
+            </div>
         </div>
-        <br/>
 
-        <div style="text-align: center;">
-            <button class="w-25 btn rounded-3 btn-secondary" @click="getPersonTotalLessons">获取所有课程</button>
+        <!-- 用户信息显示 -->
+        <div v-if="userInfoDto.name" class="card">
+            <div class="user-info">
+                <h5 style="margin: 0 0 10px 0; color: #1976d2;">用户信息</h5>
+                <p style="margin: 0; color: #495057;"><strong>姓名：</strong>{{userInfoDto.name}}</p>
+                <p v-if="userInfoDto.tel" style="margin: 5px 0 0 0; color: #495057;"><strong>电话：</strong>{{userInfoDto.tel}}</p>
+            </div>
         </div>
 
-        <div class="modal-body">
-            <div>
-                <label class="col-sm-12 col-12">
-                    用户：{{userInfoDto.name}}
-                </label>
+        <!-- 课程管理卡片 -->
+        <div v-if="courseInfoDtoList && courseInfoDtoList.length > 0" class="card">
+            <h4 style="text-align: center; margin-bottom: 25px; color: #2c3e50;">课程管理</h4>
+            
+            <div class="alert alert-warning">
+                <strong>提示：</strong>请勾选要学习的课程，然后点击开始学习。可以随时打开本页面，点击"获取所有课程"查看学习进度。
             </div>
 
-            <div v-show="courseInfoDtoList && courseInfoDtoList.length > 0">
-                <h3>请勾选要学习的课程，然后点击开始学习。可以随时打开本页面，点击“获取所有课程”查看学习进度。</h3>
-                <table>
-                    <tr>
-                        <th>勾选</th>
-                        <th>课程名称</th>
-                        <th>已学时长</th>
-                        <th>总时长</th>
-                        <th>学时</th>
-                        <th>学习状态</th>
-                    </tr>
-                    <tr v-for="course in courseInfoDtoList">
-                        <td><input type="checkbox" :disabled="course.status === '已学完'" v-model="course.checked"></td>
-                        <td>{{course.name}}</td>
-                        <td>{{course.learnedCount}}</td>
-                        <td>{{course.totalLessonCount}}</td>
-                        <td>{{course.hours}}</td>
-                        <td>{{course.status}}</td>
-                    </tr>
+            <div style="overflow-x: auto;">
+                <table class="course-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">选择</th>
+                            <th>课程名称</th>
+                            <th style="width: 100px;">已学时长</th>
+                            <th style="width: 100px;">总时长</th>
+                            <th style="width: 80px;">学时</th>
+                            <th style="width: 100px;">学习状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="course in courseInfoDtoList" :key="course.kcId">
+                            <td>
+                                <input type="checkbox" 
+                                       class="checkbox-custom" 
+                                       :disabled="course.status === '已学完'" 
+                                       v-model="course.checked">
+                            </td>
+                            <td>{{course.name}}</td>
+                            <td>{{course.learnedCount}}</td>
+                            <td>{{course.totalLessonCount}}</td>
+                            <td>{{course.hours}}</td>
+                            <td>
+                                <span :class="course.status === '已学完' ? 'status-completed' : 'status-learning'">
+                                    {{course.status}}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
+            </div>
 
-                <div>
-                    <div style="text-align: center;">
-                        <button class="w-50 btn rounded-3 btn-secondary" @click="learn">开始学习</button>
-                    </div>
-
-                    <br/>
-                    <div style="text-align: center;">
-                        <button class="w-50 btn rounded-3 btn-secondary" @click="stop">停止学习</button>
-                    </div>
-                </div>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                <button class="btn btn-success" @click="learn">开始学习</button>
+                <button class="btn btn-danger" @click="stop">停止学习</button>
             </div>
         </div>
     </div>
 </div>
-
 
 <script src="js/app.js?v=1.0.0"></script>
 </body>

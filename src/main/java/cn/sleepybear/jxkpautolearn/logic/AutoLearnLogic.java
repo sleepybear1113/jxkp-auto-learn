@@ -9,7 +9,6 @@ import cn.sleepybear.jxkpautolearn.exception.FrontException;
 import cn.sleepybear.jxkpautolearn.utils.CommonUtils;
 import cn.sleepybear.jxkpautolearn.utils.CookieUtils;
 import cn.sleepybear.jxkpautolearn.utils.MyCookieJar;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.collections4.CollectionUtils;
@@ -65,53 +64,40 @@ public class AutoLearnLogic {
 //        learn(userInfoDto);
     }
 
+    /**
+     * 获取主页的验证码 token
+     *
+     * @param userInfoDto userInfoDto
+     */
     public static void getHomePage(UserInfoDto userInfoDto) {
-        if (userInfoDto == null || userInfoDto.getIdCard() == null || userInfoDto.getPassword() == null) {
+        if (userInfoDto == null || userInfoDto.getIdCard() == null || userInfoDto.fetchPwd() == null) {
             throw new FrontException("用户登录账号密码不能为空！");
         }
         log.info("正在请求主页...");
-        String responseBody = getResponseBody(BASE_URL, userInfoDto, null);
+        String responseBody = getResponseBodyString(BASE_URL, userInfoDto, null);
         if (responseBody == null) {
             return;
         }
         Document document = Jsoup.parse(responseBody);
-        document.select("input").forEach(element -> {
+        for (Element element : document.select("input")) {
             if (element.outerHtml().contains("__RequestVerificationToken")) {
                 userInfoDto.setCaptchaToken(element.attr("value"));
+                break;
             }
-        });
+        }
         log.info("请求主页成功！");
     }
 
-    public static void getCaptchaToken(HttpServletResponse httpServletResponse, UserInfoDto userInfoDto) {
+    public static byte[] getCaptchaToken(UserInfoDto userInfoDto) {
         log.info("正在请求验证码...");
         String url = BASE_URL + "/home/ValidateCode";
-        Request request1 = new Request.Builder()
-                .url(url)
-                .build();
-        OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(3000, TimeUnit.MILLISECONDS)
-                .readTimeout(10 * 1000, TimeUnit.MILLISECONDS)
-                .cookieJar(userInfoDto.getMyCookieJar())
-                .build();
-        try (Response response = client.newCall(request1).execute()) {
-            if (!response.isSuccessful()) {
-                throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！状态码：" + response.code());
-            }
 
-            ResponseBody body = response.body();
-            if (body == null) {
-                throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！状态码：" + response.code());
-            }
-            byte[] bytes = body.bytes();
-            // 将图片的流写入到 response 中
-            httpServletResponse.setContentType("image/jpeg");
-            httpServletResponse.getOutputStream().write(bytes);
-
-            log.info("请求验证码成功！");
-        } catch (IOException e) {
+        byte[] body = getResponseBody(url, userInfoDto, null);
+        if (body == null) {
             throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！");
         }
+        log.info("请求验证码成功！");
+        return body;
     }
 
     public static void login(UserInfoDto userInfoDto, String captcha) {
@@ -119,16 +105,14 @@ public class AutoLearnLogic {
         String url = BASE_URL + "/Login/AjaxDoLogin";
         RequestBody formBody = new FormBody.Builder()
                 .add("Uname", userInfoDto.getIdCard())
-                .add("pass", userInfoDto.getPassword())
+                .add("pass", userInfoDto.fetchPwd())
                 .add("valcode", captcha)
                 .add("__RequestVerificationToken", userInfoDto.getCaptchaToken())
                 .build();
 
-        String responseBody = getResponseBody(url, userInfoDto, formBody);
-        if (responseBody == null) {
-            throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！");
-        }
+        String responseBody = getResponseBodyString(url, userInfoDto, formBody);
         if (!responseBody.contains("true")) {
+            // 登录失败，抛出异常，提示用户
             throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, responseBody);
         }
 
@@ -147,13 +131,12 @@ public class AutoLearnLogic {
         String url = BASE_URL + "/Person/EditProfile";
         log.info("正在请求获取用户信息...");
 
-        String responseBody = getResponseBody(url, userInfoDto, null);
+        String responseBody = getResponseBodyString(url, userInfoDto, null);
         if (responseBody == null) {
             return false;
         }
 
         if (responseBody.contains("请输入登录密码")) {
-            log.error("登录失效！请重新登录");
             throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "登录失效！请重新登录");
         }
 
@@ -180,14 +163,13 @@ public class AutoLearnLogic {
 
         List<CourseInfoDto> courseInfoDtoList = new ArrayList<>();
 
-        String responseBody = getResponseBody(url, userInfoDto, null);
+        String responseBody = getResponseBodyString(url, userInfoDto, null);
         if (responseBody == null) {
             return courseInfoDtoList;
         }
 
         String html = decodeHtmlEntities(responseBody);
         if (html.contains("请输入登录密码")) {
-            log.error("登录失效！请重新登录");
             throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "登录失效！请重新登录");
         }
         Document doc = Jsoup.parse(html);
@@ -340,7 +322,7 @@ public class AutoLearnLogic {
                 .add("kjid", kjId)
                 .build();
 
-        String responseBody = getResponseBody(url, userInfoDto, formBody);
+        String responseBody = getResponseBodyString(url, userInfoDto, formBody);
         if (responseBody != null && responseBody.contains("请输入登录密码")) {
             log.error("登录失效！");
             userInfoDto.setStop(true);
@@ -368,7 +350,7 @@ public class AutoLearnLogic {
     public static String getLessonHTML(String kcId, UserInfoDto userInfoDto) {
         log.info("正在请求获取课程 kcId = {}...", kcId);
         String url = BASE_URL + "/Person/MyKjs?kcid=%s".formatted(kcId);
-        String responseBody = getResponseBody(url, userInfoDto, null);
+        String responseBody = getResponseBodyString(url, userInfoDto, null);
         log.info("请求获取课程成功 kcId = {}", kcId);
         return decodeHtmlEntities(responseBody);
     }
@@ -429,7 +411,7 @@ public class AutoLearnLogic {
     public static String getKjHTML(String kjId, UserInfoDto userInfoDto) {
         String url = BASE_URL + "/Person/Play/%s".formatted(kjId);
         log.info("正在请求获取视频课件 kjId = {}...", kjId);
-        String responseBody = getResponseBody(url, userInfoDto, null);
+        String responseBody = getResponseBodyString(url, userInfoDto, null);
         log.info("请求获取视频课件成功 kjId = {}", kjId);
         return decodeHtmlEntities(responseBody);
 
@@ -458,15 +440,44 @@ public class AutoLearnLogic {
         return decoded.toString();
     }
 
-    public static String getResponseBody(String url, UserInfoDto userInfoDto, RequestBody requestBody) {
-        Request request = new Request.Builder()
-                .url(url)
-                .build();
+    public static String getResponseBodyString(String url, UserInfoDto userInfoDto, RequestBody requestBody) {
+        try (Response response = getResponse(url, userInfoDto, requestBody)) {
+            if (!response.isSuccessful()) {
+                throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, 
+                    "无法连接至服务器！状态码：" + response.code());
+            }
+            ResponseBody body = response.body();
+            if (body == null) {
+                throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, 
+                "无法连接至服务器！响应体为空");
+            }
+            return body.string();
+        } catch (IOException e) {
+            throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, 
+            "连接服务器失败：" + e.getMessage());
+        }
+    }
+
+    private static Response getResponse(String url, UserInfoDto userInfoDto, RequestBody requestBody) throws IOException {
+        Request request = requestBody != null
+            ? new Request.Builder().url(url).post(requestBody).build()
+            : new Request.Builder().url(url).build();
+        
+        OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(3000, TimeUnit.MILLISECONDS)
+            .readTimeout(10 * 1000, TimeUnit.MILLISECONDS)
+            .cookieJar(userInfoDto.getMyCookieJar())
+            .build();
+        
+        return client.newCall(request).execute();
+    }
+
+    public static byte[] getResponseBody(String url, UserInfoDto userInfoDto, RequestBody requestBody) {
+        Request request;
         if (requestBody != null) {
-            request = new Request.Builder()
-                    .url(url)
-                    .post(requestBody)
-                    .build();
+            request = new Request.Builder().url(url).post(requestBody).build();
+        } else {
+            request = new Request.Builder().url(url).build();
         }
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(3000, TimeUnit.MILLISECONDS)
@@ -482,7 +493,7 @@ public class AutoLearnLogic {
             if (body == null) {
                 throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！状态码：" + response.code());
             }
-            return body.string();
+            return body.bytes();
         } catch (IOException e) {
             return null;
         }

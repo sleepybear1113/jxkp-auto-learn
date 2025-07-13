@@ -1,6 +1,8 @@
 package cn.sleepybear.jxkpautolearn.controller;
 
 import cn.sleepybear.cacher.cache.ExpireWayEnum;
+import cn.sleepybear.jxkpautolearn.advice.ResultCodeConstant;
+import cn.sleepybear.jxkpautolearn.config.AppConfig;
 import cn.sleepybear.jxkpautolearn.config.GlobalConstants;
 import cn.sleepybear.jxkpautolearn.dto.CourseInfoDto;
 import cn.sleepybear.jxkpautolearn.dto.UserInfoDto;
@@ -11,12 +13,14 @@ import cn.sleepybear.jxkpautolearn.utils.CookieUtils;
 import cn.sleepybear.jxkpautolearn.utils.MyCookieJar;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import okhttp3.Cookie;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -27,37 +31,10 @@ import java.util.List;
  */
 @RestController
 @RequestMapping(value = GlobalConstants.PREFIX)
+@RequiredArgsConstructor
 public class AutoLearnController {
 
-    @RequestMapping("/addUserCookie")
-    public UserInfoDto addUserCookie(String cookie) {
-        if (StringUtils.isBlank(cookie)) {
-            throw new FrontException("Cookie 信息不能为空");
-        }
-
-        if (!cookie.contains(".AspNetCore.Cookies")) {
-            throw new FrontException("Cookie 信息格式不正确");
-        }
-
-        List<Cookie> cookies = CommonUtils.parseCookies(cookie, AutoLearnLogic.DOMAIN);
-        if (CollectionUtils.isEmpty(cookies)) {
-            throw new FrontException("Cookie 信息解析失败");
-        }
-
-        UserInfoDto userInfoDto = new UserInfoDto();
-        MyCookieJar myCookieJar = new MyCookieJar();
-        myCookieJar.addCookies(cookies);
-        userInfoDto.setMyCookieJar(myCookieJar);
-
-        boolean userProfile = AutoLearnLogic.getUserProfile(userInfoDto);
-        if (!userProfile) {
-            throw new FrontException("无法获取用户信息");
-        }
-
-        CookieUtils.USER_CACHER.put(userInfoDto.getKey(), userInfoDto, 300L * 1000, ExpireWayEnum.AFTER_ACCESS);
-        CookieUtils.setWebUserCookie(userInfoDto.getKey(), CookieUtils.COOKIE_MAX_AGE);
-        return userInfoDto;
-    }
+    private final AppConfig appConfig;
 
     @RequestMapping("/getUserProfile")
     public UserInfoDto getUserProfile(HttpServletRequest request) {
@@ -110,8 +87,15 @@ public class AutoLearnController {
         return true;
     }
 
+    /**
+     * 登录前置接口，获取验证码图片
+     *
+     * @param response HttpServletResponse
+     * @param idCard   身份证号
+     * @param password 密码
+     */
     @RequestMapping("/getCaptchaImg")
-    public static void getCaptchaImg(HttpServletRequest request, HttpServletResponse response, String idCard, String password) {
+    public void getCaptchaImg(HttpServletResponse response, String idCard, String password) {
         if (StringUtils.isBlank(idCard) || StringUtils.isBlank(password)) {
             throw new FrontException("账号和或密码不能为空");
         }
@@ -120,13 +104,28 @@ public class AutoLearnController {
         if (userInfoDto == null) {
             userInfoDto = new UserInfoDto();
             userInfoDto.setIdCard(idCard);
+
+            // 判断是否是管理员
+            if (appConfig.getAdminUsernameList().contains(idCard)) {
+                userInfoDto.setAdmin(true);
+            }
         }
 
         userInfoDto.setMyCookieJar(new MyCookieJar());
         userInfoDto.setPassword(password);
+
+        // 获取首页，获取验证码 token
         AutoLearnLogic.getHomePage(userInfoDto);
 
-        AutoLearnLogic.getCaptchaToken(response, userInfoDto);
+        try {
+            // 获取验证码图片，将 bytes 写入返回流，以图片形式
+            byte[] bytes = AutoLearnLogic.getCaptchaToken(userInfoDto);
+            response.setContentType("image/jpeg");
+            response.getOutputStream().write(bytes);
+            response.getOutputStream().flush();
+        } catch (IOException e) {
+            throw new FrontException(ResultCodeConstant.CodeEnum.CANNOT_CONNECT_TO_SERVER, "无法连接至服务器！");
+        }
 
         CookieUtils.USER_CACHER.put(userInfoDto.getKey(), userInfoDto, 300L * 1000, ExpireWayEnum.AFTER_ACCESS);
     }
@@ -151,7 +150,7 @@ public class AutoLearnController {
     private static UserInfoDto a(HttpServletRequest request) {
         jakarta.servlet.http.Cookie cookie = CookieUtils.getCookie(request);
         if (cookie == null) {
-            throw new FrontException("请先添加 Cookie");
+            throw new FrontException("请先添加 Cookie或者输入用户名登录");
         }
 
         String key = cookie.getValue();

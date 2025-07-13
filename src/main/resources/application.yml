@@ -3,3 +3,6 @@ server:
 spring:
   application:
     name: jxkp-auto-learn
+
+app-config:
+  admin-usernames: 123,456
